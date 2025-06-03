@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>App View (Offline Iframe)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.2, maximum-scale=1.2, user-scalable=no">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #f0f0f0;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .iframe-wrapper {
+      width: 100%;
+      height: 100%;
+      max-width: 420px;
+      max-height: 100%;
+      background: white;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      transform: scale(1.05); /* Slight zoom for app feel */
+      transform-origin: center center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    @media (min-width: 768px) {
+      .iframe-wrapper {
+        transform: none;
+        max-width: 600px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="iframe-wrapper">
+    <iframe id="myFrame" src=""></iframe>
+  </div>
+
+  <script>
+    const iframeUrl = 'https://script.google.com/a/~/macros/s/AKfycbz3kU3nZi6P9wBL-09bJg4o7uxF-shjIbk1v4zHvUlX_2Qfa2Mc_vXLAVmIrJSmnbMs/exec';
+    const iframe = document.getElementById('myFrame');
+
+    function loadFromCacheFirst() {
+      if ('caches' in window) {
+        caches.open('iframe-permanent-cache').then(cache => {
+          cache.match(iframeUrl).then(response => {
+            if (response) {
+              response.blob().then(blob => {
+                const blobUrl = URL.createObjectURL(blob);
+                iframe.src = blobUrl;
+              });
+            } else {
+              iframe.src = iframeUrl;
+              fetchAndCache();
+            }
+          });
+        });
+      } else {
+        iframe.src = iframeUrl;
+      }
+    }
+
+    function fetchAndCache() {
+      if (navigator.onLine) {
+        fetch(iframeUrl)
+          .then(resp => {
+            return caches.open('iframe-permanent-cache').then(cache => {
+              cache.put(iframeUrl, resp.clone());
+              iframe.src = iframeUrl;
+            });
+          })
+          .catch(err => {
+            console.error('Fetch error:', err);
+          });
+      }
+    }
+
+    window.addEventListener('load', loadFromCacheFirst);
+    window.addEventListener('online', fetchAndCache);
+  </script>
+</body>
+</html>
